@@ -91,8 +91,8 @@ module.exports.updateAvatar = (req, res) => {
     .orFail(() => {
       throw new Error('NotFoundError');
     })
-    .then((newData) => {
-      res.send(newData);
+    .then(() => {
+      res.send({ message: 'Аватар успешно обновлен!' });
     })
     .catch((err) => {
       if (err.message === 'NotFoundError') {
