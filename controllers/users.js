@@ -92,7 +92,7 @@ module.exports.updateAvatar = (req, res) => {
       throw new Error('NotFoundError');
     })
     .then(() => {
-      res.send({ message: 'Аватар успешно обновлен!' });
+      res.send({ message: avatar });
     })
     .catch((err) => {
       if (err.message === 'NotFoundError') {
