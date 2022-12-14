@@ -1,9 +1,10 @@
 const User = require('../models/user');
 const {
+  validationCode,
   validationErrorCode,
   notFoundErrorCode,
   handleDefaultError,
-} = require('../utils/errorConstans');
+} = require('../utils/Constans');
 
 module.exports.getUsers = (req, res) => {
   User.find({})
@@ -18,7 +19,7 @@ module.exports.createUser = (req, res) => {
     about,
     avatar,
   })
-    .then((user) => res.status(201).send(user))
+    .then((user) => res.status(validationCode).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(validationErrorCode).send({
@@ -52,10 +53,10 @@ module.exports.getUser = (req, res) => {
 };
 
 module.exports.updateProfile = (req, res) => {
-  const { name, about, avatar } = req.body;
+  const { name, about } = req.body;
   User.findByIdAndUpdate(
     req.user._id,
-    { name, about, avatar },
+    { name, about },
     { new: true, runValidators: true },
   )
     .orFail(() => {
@@ -71,15 +72,9 @@ module.exports.updateProfile = (req, res) => {
         });
         return;
       }
-      if (err.name === 'CastError') {
-        res.status(validationErrorCode).send({
-          message: 'Переданы некорректные данные при обновлении профиля.',
-        });
-        return;
-      }
       if (err.name === 'ValidationError') {
         res.status(validationErrorCode).send({
-          message: 'Имя пользователя должно быть длиной от 2 до 30 символов.',
+          message: 'Переданы некорректные данные при обновлении профиля.',
         });
         return;
       }
@@ -88,7 +83,7 @@ module.exports.updateProfile = (req, res) => {
 };
 
 module.exports.updateAvatar = (req, res) => {
-  const avatar = req.body;
+  const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, avatar, {
     new: true,
     runValidators: true,

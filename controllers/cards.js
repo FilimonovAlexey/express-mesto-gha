@@ -3,7 +3,7 @@ const {
   validationErrorCode,
   notFoundErrorCode,
   handleDefaultError,
-} = require('../utils/errorConstans');
+} = require('../utils/Constans');
 
 module.exports.getCards = (req, res) => {
   Card.find({})
