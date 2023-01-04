@@ -1,105 +1,68 @@
 const Card = require('../models/card');
-const {
-  validationErrorCode,
-  notFoundErrorCode,
-  handleDefaultError,
-} = require('../utils/Constans');
+const NotFoundError = require('../utils/errors/notFound-error');
+const ForbiddenError = require('../utils/errors/forbidden-error');
 
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.send(cards))
-    .catch((err) => handleDefaultError(err, res));
+    .catch((err) => next(err));
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
   Card.create({ name, link, owner })
     .then((card) => res.status(201).send(card))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(validationErrorCode).send({
-          message: 'Переданы некорректные данные при создании карточки.',
-        });
-        return;
-      }
-      handleDefaultError(err, res);
-    });
+    .catch((err) => next(err));
 };
 
-module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params.cardId)
+module.exports.deleteCard = (req, res, next) => {
+  Card.findById(req.params.cardId)
     .orFail(() => {
-      throw new Error('NotFoundError');
+      throw new NotFoundError('Карточки с указанным _id не cуществует');
     })
-    .then(() => {
-      res.send({ message: 'успешно' });
-    })
-    .catch((err) => {
-      if (err.message === 'NotFoundError') {
-        res
-          .status(notFoundErrorCode)
-          .send({ message: 'Передан несуществующий _id карточки.' });
-      } else if (err.name === 'CastError') {
-        res.status(validationErrorCode).send({
-          message: 'Переданы некорректные данные для удаления карточки.',
-        });
-      } else {
-        handleDefaultError(err, res);
+    .then((card) => {
+      if (`${card.owner}` !== req.user._id) {
+        throw new ForbiddenError('Удалять можно только свою карточку');
       }
-    });
+      Card.findByIdAndRemove(req.params.cardId)
+        .orFail(() => {
+          throw new NotFoundError('Карточка с указанным _id не найдена');
+        })
+        .then(() => {
+          res.send({ message: 'успешно' });
+        })
+        .catch((err) => next(err));
+    })
+    .catch((err) => next(err));
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
     .orFail(() => {
-      throw new Error('NotFoundError');
+      throw new NotFoundError('Карточки с указанным _id не найдена');
     })
     .then((newData) => {
       res.send(newData);
     })
-    .catch((err) => {
-      if (err.message === 'NotFoundError') {
-        res
-          .status(notFoundErrorCode)
-          .send({ message: 'Передан несуществующий _id карточки.' });
-      } else if (err.name === 'CastError') {
-        res.status(validationErrorCode).send({
-          message: 'Переданы некорректные данные для постановки/снятии лайка.',
-        });
-      } else {
-        handleDefaultError(err, res);
-      }
-    });
+    .catch((err) => next(err));
 };
 
-module.exports.dislikeCard = (req, res) => {
+module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
     { new: true },
   )
     .orFail(() => {
-      throw new Error('NotFoundError');
+      throw new NotFoundError('Карточки с указанным _id не найдена');
     })
     .then((newData) => {
       res.send(newData);
     })
-    .catch((err) => {
-      if (err.message === 'NotFoundError') {
-        res
-          .status(notFoundErrorCode)
-          .send({ message: 'Передан несуществующий _id карточки.' });
-      } else if (err.name === 'CastError') {
-        res.status(validationErrorCode).send({
-          message: 'Переданы некорректные данные для постановки/снятии лайка.',
-        });
-      } else {
-        handleDefaultError(err, res);
-      }
-    });
+    .catch((err) => next(err));
 };
